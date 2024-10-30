@@ -27,8 +27,6 @@ var books = [
     {name:"The Journey of Souls, by Aretha."},
     {name:"The Envoy to Varlamore, by Deryk Paulson."}
 ];
-var manuscripts = [];
-var manuscriptHints = [];
 
 var MAP_EMPTY = 0;
 var MAP_BLOCK = 1;
@@ -37,7 +35,6 @@ var MAP_BOOKCASE_2 = 3;
 
 var MAP_BOOK_FIRST = 0;
 var MAP_BOOK_LAST = books.length;
-var MAP_MANUSCRIPT = 35;
 var MAP_HINT = 100;
 
 var mapBot = "333333333333333333333300000000003333333333333333333333333143141300314134133300000000003334134133003411341333330000000000000000003300000000003300000041000000000033340000000000000000001300000000003100000011000000000013310000003330000000004300000000003400330033003333330043330033003330000330001300000000003100330011003333330033310033003330000330003300000000003300000014000000000013340000003330000000000300000000003000000033000000000013330000000000000000000300000000003000000000000000000033300000000000031413143300000000003300000000000000000003300033000000034143143300000000003100000000003300000003330033003300000000004300000000003100033330001400000033310033001100033333301300000000003400033330004100000013340033004400033333303300000000003300033330001100330013330033003300000000003333333333333300000000003300330033310033001100000000003300000000003300000000004100000043310000001100000000000000000000000000000000001400000013330000003300000000000000000000000000000000003300000033333414133331141333000000000000000000333114133334114333333333333333333333000333330033333000333333333333333333000000000000000030000300000000003000030000000000000000000000000000000030000300000000003003330000000000000000000000000000000030000300333333003003330000000000000000000000000000000030000300333333003000030000000000000000000000000000000030000000000000000000330000000000000000000000000000000030000000000000000000330000000000000000000000000000000030000300333333003000030000000000000000000000000000000030000300333333003000030000000000000000000000000000000030000300000000003000330000000000000000000000000000000030000300000000003000330000000000000000333333333333333333000333330033333000030000000000000000333414133334141333000000000000000003330000000000000000330000000000000000000000000000000003330000000000000000310000000000000000000003300000000330030000000000000000340033000000000000003303303300330330330000000000000000330033003330000000003333333333333333330000000000000000310033003330000000003300000000000000000000000000000000310033003330000000001300000000000000000000000000000000330033003330000000004300000000000000000000000000000000300033000000034431413300000000000000000000000000000000300000000000031434143300000000000000000000000000000000330000003300000000000300000000000000000000000000000000340000001100000000000300000000000000000000000000000000310000004400000000003300000000000000000000000000000000330033001100333333001300000000000000000000000000000000340033003300333333001300000000000000000000000000000000310000001400000000004300000000000000000000000000000000330000004100000000003300000000000000000000000000000000333113143300344131133300000000000000000000000000000000333333333333333333333300000000000000000000000000000000";
@@ -100,13 +97,6 @@ function init() {
         ele.append(bookTextEle);
 		$(".book-names").append(ele);
 	}
-    for (i = 0; i < 1; i++) {
-        var ele = $("<div class='book manuscript'>");
-        var bookTextEle = $("<div class='book-text'>");
-        bookTextEle.text("Dark manuscript");
-        ele.append(bookTextEle);
-        $(".book-names").append(ele);
-    }
 
 	canvases[0] = $(".canv-bot");
 	canvases[1] = $(".canv-mid");
@@ -243,20 +233,13 @@ function drawMapData(floor, section) {
                     highlighted.push({ x:x, y:y });
                 }
                 if (lastHoverBookId !== -1) {                    
-                    if (lastHoverBookId === MAP_MANUSCRIPT) {
-                        if (manuscriptHints.indexOf(bookcaseId) !== -1) {
-                            highlighted.push({ x:x, y:y });
-                        }
+                    if (books[lastHoverBookId].pos === bookcaseId) {
+                        highlighted.push({ x:x, y:y });
+                        highlightSection = true;
                     }
-                    else {
-                        if (books[lastHoverBookId].pos === bookcaseId) {
-                            highlighted.push({ x:x, y:y });
-                            highlightSection = true;
-                        }
-                        if (hints[bookcaseId] && hints[bookcaseId].bookIds.indexOf(lastHoverBookId) !== -1) {
-                            highlighted.push({ x:x, y:y });
-                            highlightSection = true;
-                        }
+                    if (hints[bookcaseId] && hints[bookcaseId].bookIds.indexOf(lastHoverBookId) !== -1) {
+                        highlighted.push({ x:x, y:y });
+                        highlightSection = true;
                     }
                 }
             }
@@ -270,13 +253,6 @@ function drawMapData(floor, section) {
 					ctx.fillStyle = "#00FFD0";
                 }
 			}
-            else if (bookTile === MAP_MANUSCRIPT) {
-                ctx.fillStyle = "#327DFF";
-                if (lastHoverBookId === MAP_MANUSCRIPT) {
-                    highlighted.push({ x:x, y:y });
-                    highlightSection = true;
-                }
-            }
             else if (bookTile === MAP_HINT) {
                 ctx.fillStyle = "#CECE00";
             }
@@ -422,21 +398,16 @@ function hintSequence(sequence, bookcaseOrderIndex) {
         }
         
         if (tile === -1 || tile === MAP_HINT) {
-            if (bookId === MAP_MANUSCRIPT) {
-                manuscriptHints.push(bookcaseId);
+            var hintsObj = hints[bookcaseId];
+            if (!hintsObj) {
+                hintsObj = {
+                    bookIds: []
+                };
+                hints[bookcaseId] = hintsObj;
             }
-            else {
-                var hintsObj = hints[bookcaseId];
-                if (!hintsObj) {
-                    hintsObj = {
-                        bookIds: []
-                    };
-                    hints[bookcaseId] = hintsObj;
-                }
                 
-                hintsObj.bookIds.push(bookId);
-                books[bookId].hints.push(bookcaseId);
-            }
+            hintsObj.bookIds.push(bookId);
+            books[bookId].hints.push(bookcaseId);
         }
         index += step;
         index %= bookcasesOrderedIds.length;
@@ -450,17 +421,9 @@ function clearHints() {
             setMapBook(loc.floor, loc.x, loc.y, -1);
         }
     }
-    for (var i = 0; i < manuscriptHints.length; i++) {
-        var bookcaseId = manuscriptHints[i];
-        var loc = mapPosAtBookcaseId[bookcaseId];
-        if (getMapBook(loc.floor, loc.x, loc.y) === MAP_HINT) {
-            setMapBook(loc.floor, loc.x, loc.y, -1);
-        }
-    }
     for (var i = 0; i < books.length; i++) {
         books[i].hints = [];
     }
-    manuscriptHints = [];
     hints = {};
 }
 
@@ -475,18 +438,17 @@ function recalculateHints(automap) {
     var D = 13;
     var E = 14;
     var F = 15;
-    var Z = 35;
     var sequences = [
-        [Z,4,Z,5,6,A,9,Z,Z,2,B,0,Z,3,Z,1,Z,F,8,7,Z,D,Z,E,Z,C],
-        [Z,4,Z,5,6,A,9,Z,Z,2,B,0,F,Z,3,Z,1,Z,E,8,7,Z,D,Z,Z,C],
-        [3,F,Z,1,5,Z,Z,2,Z,4,Z,B,0,Z,D,Z,E,Z,8,7,6,A,9,Z,Z,C],
-        [2,Z,3,Z,1,Z,4,Z,0,Z,Z,8,7,Z,D,Z,5,6,A,9,Z,B,Z,C,E,F],
-        [2,A,B,6,4,Z,F,Z,D,Z,0,Z,Z,9,Z,Z,3,Z,5,8,7,E,Z,1,Z,C],
+        [4,5,6,A,9,2,B,0,3,1,F,8,7,D,E,C],
+        [4,5,6,A,9,2,B,0,F,3,1,E,8,7,D,C],
+        [3,F,1,5,2,4,B,0,D,E,8,7,6,A,9,C],
+        [2,3,1,4,0,8,7,D,5,6,A,9,B,C,E,F],
+        [2,A,B,6,4,F,D,0,9,3,5,8,7,E,1,C],
     ];
 
     var step = 13;
-    var totalItems = books.length + 10;
-    var foundItemsCount = books.filter(x => x.pos !== -1).length + manuscripts.length;
+    var totalItems = books.length;
+    var foundItemsCount = books.filter(x => x.pos !== -1).length;
     var index;
     
     clearHints();
@@ -535,11 +497,6 @@ function recalculateHints(automap) {
                 booksAutomapped++;
             }
         }
-        if (manuscriptHints.length + manuscripts.length === 10) {
-            for (var i = 0; i < manuscriptHints.length; i++) {
-                mapManuscript(manuscriptHints[i]);
-            }
-        }
         if (booksAutomapped > 0) {
             recalculateHints();
         }
@@ -574,27 +531,6 @@ function mapBook(bookId, bookcaseId) {
 	generateCode(false);
 }
 
-function updateManuscriptsText() {
-    var text = "Dark manuscript";
-    if (manuscripts.length > 0) {
-        text += " (" + manuscripts.length + ")";
-    }
-    $(".manuscript").find(".book-text").text(text);
-}
-
-function mapManuscript(bookcaseId) {
-    unmapBookcase(bookcaseId);
-    
-    manuscripts.push({
-        pos: bookcaseId
-    });
-    updateManuscriptsText();
-    
-    var loc = mapPosAtBookcaseId[bookcaseId];
-    setMapBook(loc.floor, loc.x, loc.y, MAP_MANUSCRIPT);
-    generateCode(false);
-}
-
 function unmapBookcase(bookcaseId) {
 	var loc = mapPosAtBookcaseId[bookcaseId];
     var tile = getMapBook(loc.floor, loc.x, loc.y);
@@ -602,16 +538,6 @@ function unmapBookcase(bookcaseId) {
     
     if (tile >= MAP_BOOK_FIRST && tile <= MAP_BOOK_LAST) {
         books[tile].pos = -1;
-    }
-    else if (tile === MAP_MANUSCRIPT) {
-        for (var i = 0; i < manuscripts.length; i++) {
-            var manuscript = manuscripts[i];
-            if (manuscript.pos === bookcaseId) {
-                manuscripts.splice(i, 1);
-                i--;
-            }
-        }
-        updateManuscriptsText();
     }
     generateCode(false);
 }
@@ -652,13 +578,6 @@ function generateCode(compress) {
 				code += encode(book.pos, 2);
 			}
 		}
-        for (var i = 0; i < manuscripts.length; i++) {
-            var manuscript = manuscripts[i];
-            if (manuscript.pos !== -1) {
-                code += 'Z';
-                code += encode(manuscript.pos, 2);
-            }
-        }
 	}
 	$("#book-data-inp").val(code);
     requestRerender = true;
@@ -669,10 +588,6 @@ function parseCode(code) {
 	for (bookId = 0; bookId < books.length; bookId++) {
         unmapBook(bookId);
 	}
-    for (var i = 0; i < manuscripts.length; i++) {
-        unmapBookcase(manuscripts[i].pos);
-        i--;
-    }
 	bookId = -1;
 	while (pos < code.length) {
         bookId = decode(code[pos++]);
@@ -681,12 +596,7 @@ function parseCode(code) {
 		bookcaseId = decode(code.substring(pos, pos + 2));
 		pos += 2;
 		
-        if (bookId === MAP_MANUSCRIPT) {
-            mapManuscript(bookcaseId);
-        }
-        else {
-            mapBook(bookId, bookcaseId);
-        }
+        mapBook(bookId, bookcaseId);
 	}
     requestRerender = true;
 }
@@ -721,13 +631,6 @@ $(document).ready(function() {
 	
 	$(".book-names").on("mousedown", ".book", function(e) {
 		if (e.button != 0) return;
-        if ($(this).hasClass("manuscript")) {
-            if (selectedBookcaseId !== -1) {
-                mapManuscript(selectedBookcaseId);
-                recalculateHints();
-            }
-            return;
-        }
         
 		var bookId = -1;
 		for (var i = 0; i < books.length; i++) {
@@ -742,16 +645,6 @@ $(document).ready(function() {
 	
 	$(".book-names").on("contextmenu", ".book", function(e) {
 		e.preventDefault();
-        if ($(this).hasClass("manuscript")) {
-            if (manuscripts.length > 0) {
-                for (var i = 0; i < manuscripts.length; i++) {
-                    unmapBookcase(manuscripts[i].pos);
-                    i--;
-                }
-                recalculateHints(false);
-            }
-            return;
-        }
         
 		var bookId = -1;
 		for (var i = 0; i < books.length; i++) {
@@ -771,19 +664,14 @@ $(document).ready(function() {
 	});
 	
 	$(".book-names").on("mouseenter", ".book", function(e) {
-        if ($(this).hasClass("manuscript")) {
-            lastHoverBookId = MAP_MANUSCRIPT;
-        }
-        else {
-            var bookId = -1;
-            for (var i = 0; i < books.length; i++) {
-                if (books[i].name === $(this).find(".book-text").text()) {
-                    bookId = i;
-                    break;
-                }
+        var bookId = -1;
+        for (var i = 0; i < books.length; i++) {
+            if (books[i].name === $(this).find(".book-text").text()) {
+                bookId = i;
+                break;
             }
-            lastHoverBookId = bookId;
         }
+        lastHoverBookId = bookId;
     
         requestRerender = true;
 	});
